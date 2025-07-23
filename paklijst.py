@@ -1,3 +1,5 @@
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
 import streamlit as st
 import pandas as pd
 import os
@@ -8,8 +10,18 @@ import streamlit.components.v1 as components
 # ---------- Config ----------
 st.set_page_config(page_title="Paklijst App", layout="wide")
 
+# ---------- Google Sheets ----------
+scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+creds_dict = st.secrets["gcp_service_account"]
+creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+client = gspread.authorize(creds)
+
+SHEET_NAME = "Paklijst Data"
+
+
+
 # ---------- Constants ----------
-FILENAME = "paklijst_data.xlsx"
+
 TEMPLATE_FILE = "packing_list.xlsx"
 DEFAULT_CATEGORIES = [
     "Boodschappen",
@@ -39,39 +51,41 @@ CATEGORY_EMOJIS = {
 def load_data():
     dfs = {}
     try:
-        if os.path.exists(FILENAME):
-            dfs = pd.read_excel(FILENAME, sheet_name=None, engine="openpyxl")
-        elif os.path.exists(TEMPLATE_FILE):
-            template_df = pd.read_excel(TEMPLATE_FILE, engine="openpyxl")
-            for user in ["David & Julia", "Koen & Rumeysa"]:
-                dfs[user] = template_df.copy()
-        else:
-            for user in ["David & Julia", "Koen & Rumeysa"]:
-                dfs[user] = pd.DataFrame(columns=["Item", "Category", "Packed", "Deleted", "Timestamp", "Notes", "History"])
-    except Exception as e:
-        # If file is corrupted, reset it
-        st.warning("Data bestand was corrupt en is opnieuw aangemaakt.")
+        spreadsheet = client.open(SHEET_NAME)
         for user in ["David & Julia", "Koen & Rumeysa"]:
-            dfs[user] = pd.DataFrame(columns=["Item", "Category", "Packed", "Deleted", "Timestamp", "Notes", "History"])
-        save_data(dfs)
-    for name, df in dfs.items():
-        for col in ["Packed", "Deleted", "Timestamp", "Notes", "History"]:
-            if col not in df.columns:
-                df[col] = pd.NaT if col == "Timestamp" else ""
-        dfs[name] = df.astype({
-            "Item": "string",
-            "Category": "string",
-            "Packed": "bool",
-            "Deleted": "bool",
-            "Notes": "string",
-            "History": "string"
-        })
+            try:
+                sheet = spreadsheet.worksheet(user)
+                data = sheet.get_all_records()
+                df = pd.DataFrame(data)
+            except gspread.exceptions.WorksheetNotFound:
+                df = pd.DataFrame(columns=["Item", "Category", "Packed", "Deleted", "Timestamp", "Notes", "History"])
+                spreadsheet.add_worksheet(title=user, rows="100", cols="10")
+            for col in ["Packed", "Deleted", "Timestamp", "Notes", "History"]:
+                if col not in df.columns:
+                    df[col] = pd.NaT if col == "Timestamp" else ""
+            dfs[user] = df.astype({
+                "Item": "string",
+                "Category": "string",
+                "Packed": "bool",
+                "Deleted": "bool",
+                "Notes": "string",
+                "History": "string"
+            })
+    except Exception as e:
+        st.error(f"Fout bij laden van Google Sheet: {e}")
     return dfs
 
+
 def save_data(dfs):
-    with pd.ExcelWriter(FILENAME, engine="openpyxl", mode="w") as writer:
-        for name, df in dfs.items():
-            df.to_excel(writer, sheet_name=name, index=False)
+    spreadsheet = client.open(SHEET_NAME)
+    for user, df in dfs.items():
+        try:
+            sheet = spreadsheet.worksheet(user)
+        except gspread.exceptions.WorksheetNotFound:
+            sheet = spreadsheet.add_worksheet(title=user, rows="100", cols="10")
+        sheet.clear()
+        sheet.update([df.columns.values.tolist()] + df.fillna("").values.tolist())
+
 
 def add_item(df, item, category):
     return pd.concat([df, pd.DataFrame([{
