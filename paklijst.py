@@ -177,7 +177,7 @@ with tab1:
     # --- Search bar ---
     search_query = st.text_input("🔍 Zoek een item in de lijst", key="search_bar").strip().lower()
 
-    filter_option = st.radio("", ["Alle", "Niet ingepakt", "Ingepakt", "Verwijderd"], horizontal=True)
+    filter_option = st.radio("", ["Allemaal", "Niet ingepakt", "Ingepakt", "Verwijderd"], horizontal=True)
     filtered_df = filter_df(df, filter_option)
 
     # Apply search filter
