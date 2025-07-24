@@ -1,4 +1,3 @@
-# --- db.py (UPDATED) ---
 
 import streamlit as st
 import sqlitecloud
@@ -9,24 +8,22 @@ DB_FILE = "paklijst.db"
 USERS = ["David_and_Julia", "Koen_and_Rumeysa"]
 COLUMNS = ["Item", "Category", "Packed", "Deleted", "Notes"]
 
-
 def connect_db():
     return sqlitecloud.connect(st.secrets["sqlitecloud_url"])
-
 
 def init_db():
     conn = connect_db()
     cursor = conn.cursor()
     for user in USERS:
         cursor.execute(f"""
-            CREATE TABLE IF NOT EXISTS {user} (
-                id INTEGER PRIMARY KEY,
-                Item TEXT,
-                Category TEXT,
-                Packed INTEGER,
-                Deleted INTEGER,
-                Notes TEXT
-            )
+        CREATE TABLE IF NOT EXISTS {user} (
+            id INTEGER PRIMARY KEY,
+            Item TEXT,
+            Category TEXT,
+            Packed INTEGER,
+            Deleted INTEGER,
+            Notes TEXT
+        )
         """)
     conn.commit()
     conn.close()
@@ -41,16 +38,7 @@ def get_items(user, filter_option="Alle", search_query=""):
     columns = [desc[0] for desc in cursor.description]
     rows = cursor.fetchall()
     df = pd.DataFrame(rows, columns=columns)
-
     conn.close()
-
-    if df.empty:
-        preset_df = load_preset_data()
-        if not preset_df.empty:
-            overwrite_user_data(user, preset_df)
-            conn = connect_db()
-            df = pd.read_sql_query(f"SELECT * FROM {table}", conn)
-            conn.close()
 
     for col in COLUMNS:
         if col not in df.columns:
@@ -61,19 +49,19 @@ def get_items(user, filter_option="Alle", search_query=""):
     df = df.astype({
         "Item": "string",
         "Category": "string",
-        "Packed": "bool",
-        "Deleted": "bool",
+        "Packed": "int",
+        "Deleted": "int",
         "Notes": "string"
     })
 
     if filter_option == "Ingepakt":
-        df = df[(df["Packed"]) & (~df["Deleted"])]
+        df = df[(df["Packed"] == 1) & (df["Deleted"] == 0)]
     elif filter_option == "Niet ingepakt":
-        df = df[~df["Packed"] & (~df["Deleted"])]
+        df = df[(df["Packed"] == 0) & (df["Deleted"] == 0)]
     elif filter_option == "Verwijderd":
-        df = df[df["Deleted"]]
+        df = df[df["Deleted"] == 1]
     else:
-        df = df[~df["Deleted"]]
+        df = df[df["Deleted"] == 0]
 
     if search_query:
         df = df[df["Item"].str.lower().str.contains(search_query)]
@@ -83,9 +71,9 @@ def get_items(user, filter_option="Alle", search_query=""):
 def get_all_items(user):
     return get_items(user, "Alle")
 
-def add_item(user, item, category, note="", packed=0):
+def add_item(user, item, category, note="", packed=False):
     table = user.replace(" ", "_").replace("&", "and")
-    item_data = (item, category, packed, 0, note)
+    item_data = (item, category, int(packed), 0, note)
     save_item(table, item_data)
 
 def save_item(user, item_data):
@@ -106,7 +94,7 @@ def update_item(user, item_id, column, value):
         UPDATE {table}
         SET {column} = ?
         WHERE id = ?
-    """, (value, item_id))
+    """, (int(value) if column in ["Packed", "Deleted"] else value, item_id))
     conn.commit()
     conn.close()
 
@@ -116,7 +104,7 @@ def delete_item(user, item_id):
 def restore_item(user, item_id):
     update_item(user, item_id, "Deleted", 0)
 
-def mark_packed(user, item_id, packed=1):
+def mark_packed(user, item_id, packed=True):
     table = user.replace(" ", "_").replace("&", "and")
     conn = connect_db()
     cursor = conn.cursor()
@@ -149,7 +137,7 @@ def get_progress(user):
 def list_presets():
     return [f for f in os.listdir(".") if f.endswith(".csv") and f.startswith("_")]
 
-def load_preset_data():
+def load_preset_data(preset_file):
     try:
         df = pd.read_csv(preset_file, sep=";")
         df = df.fillna("")
@@ -159,8 +147,8 @@ def load_preset_data():
         df = df.astype({
             "Item": "string",
             "Category": "string",
-            "Packed": "bool",
-            "Deleted": "bool",
+            "Packed": "int",
+            "Deleted": "int",
             "Notes": "string"
         })
         return df[COLUMNS]
@@ -177,8 +165,8 @@ def overwrite_user_data(user, df):
         item_data = (
             str(row.get("Item", "") or ""),
             str(row.get("Category", "") or ""),
-            int(bool(row.get("Packed", 0))),
-            int(bool(row.get("Deleted", 0))),
+            int(row.get("Packed", 0)),
+            int(row.get("Deleted", 0)),
             str(row.get("Notes", "") or "")
         )
         cursor.execute(f"""
@@ -188,5 +176,4 @@ def overwrite_user_data(user, df):
     conn.commit()
     conn.close()
 
-# Initialiseer database bij import
 init_db()
