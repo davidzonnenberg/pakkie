@@ -145,6 +145,7 @@ with tab_preset:
         st.success("Presetlijst geladen en toegepast!")
         st.rerun()
     
+    # --- Download paklijst ---
     st.markdown("### 💾 Download jouw paklijst")
     export_df = get_all_items(user)
     st.download_button(
@@ -154,16 +155,25 @@ with tab_preset:
         mime="text/csv"
     )
 
+    # --- Upload paklijst ---
     st.markdown("### 📤 Upload jouw paklijst")
-    uploaded_file = st.file_uploader("Kies een CSV bestand")
-    if uploaded_file is not None:
+
+    # Ensure session flag is initialized
+    if "uploaded_done" not in st.session_state:
+        st.session_state.uploaded_done = False
+
+    uploaded_file = st.file_uploader("Kies een CSV bestand", type=["csv"])
+
+    if uploaded_file is not None and not st.session_state.uploaded_done:
         try:
             uploaded_df = pd.read_csv(uploaded_file, sep=";")
             overwrite_user_data(user, uploaded_df)
+            st.session_state.uploaded_done = True
             st.success("Paklijst hersteld uit upload!")
             st.rerun()
         except Exception as e:
             st.error(f"Fout bij inladen: {e}")
+
 
 
 
