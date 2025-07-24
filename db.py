@@ -1,7 +1,7 @@
 # --- db.py (UPDATED) ---
 
 import streamlit as st
-import sqlite3
+import sqlitecloud
 import pandas as pd
 import os
 
@@ -9,8 +9,10 @@ DB_FILE = "paklijst.db"
 USERS = ["David_and_Julia", "Koen_and_Rumeysa"]
 COLUMNS = ["Item", "Category", "Packed", "Deleted", "Notes"]
 
+
 def connect_db():
-    return sqlite3.connect(DB_FILE, check_same_thread=False)
+    return sqlitecloud.connect(st.secrets["sqlitecloud_url"])
+
 
 def init_db():
     conn = connect_db()
