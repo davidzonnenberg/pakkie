@@ -54,7 +54,7 @@ tab1, tab_preset, tab2, tab3 = st.tabs(["📋 Lijst", "📦 Load preset", "➕ T
 # --- Tab 1: Lijst ---
 with tab1:
     search_query = st.text_input("🔍 Zoek een item in de lijst", key="search_bar").strip().lower()
-    filter_option = st.radio("", ["Alle", "Niet ingepakt", "Ingepakt", "Verwijderd"], horizontal=True)
+    filter_option = st.radio("Filter", ["Alle", "Niet ingepakt", "Ingepakt", "Verwijderd"], horizontal=True)
     df = get_items(user, filter_option, search_query)
 
     if "id" not in df.columns:
