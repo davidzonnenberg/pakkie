@@ -124,7 +124,7 @@ def mark_packed(user, item_id, packed=True):
         UPDATE {table}
         SET Packed = ?
         WHERE id = ?
-    """, (packed, item_id))
+    """, (int(packed), item_id))
     conn.commit()
     conn.close()
 
