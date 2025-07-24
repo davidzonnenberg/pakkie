@@ -154,14 +154,17 @@ with tab_preset:
         mime="text/csv"
     )
 
-    st.markdown("### 💾 Download jouw paklijst")
-    export_df = get_all_items(user)
-    st.download_button(
-        label="Download als CSV",
-        data=export_df.to_csv(index=False, sep=";"),
-        file_name=f"{user.replace(' ', '_')}_paklijst.csv",
-        mime="text/csv"
-    )
+    st.markdown("### 📤 Upload jouw paklijst")
+    uploaded_file = st.file_uploader("Kies een CSV bestand")
+    if uploaded_file is not None:
+        try:
+            uploaded_df = pd.read_csv(uploaded_file, sep=";")
+            overwrite_user_data(user, uploaded_df)
+            st.success("Paklijst hersteld uit upload!")
+            st.rerun()
+        except Exception as e:
+            st.error(f"Fout bij inladen: {e}")
+            st.rerun()
 
 
 
