@@ -50,6 +50,23 @@ components.iframe(
 st.title(f"📚 Paklijst – {user}")
 tab1, tab_preset, tab2, tab3 = st.tabs(["📋 Lijst", "📦 Load preset", "➕ Toevoegen", "📊 Voortgang"])
 
+
+# ------------------ Functions ------------------
+st.download_button(
+    label="💾 Download mijn paklijst",
+    data=df.to_csv(index=False, sep=";"),
+    file_name=f"{user.replace(' ', '_')}_paklijst.csv",
+    mime="text/csv"
+)
+
+uploaded_file = st.file_uploader("📤 Upload jouw paklijst (.csv)")
+if uploaded_file is not None:
+    uploaded_df = pd.read_csv(uploaded_file, sep=";")
+    overwrite_user_data(user, uploaded_df)
+    st.success("Lijst succesvol hersteld!")
+    st.rerun()
+
+
 # --- Tab 1: Lijst ---
 with tab1:
     search_query = st.text_input("🔍 Zoek een item in de lijst", key="search_bar").strip().lower()
