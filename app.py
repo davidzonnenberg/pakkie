@@ -146,7 +146,7 @@ with tab_preset:
         st.rerun()
     
     # --- Download paklijst ---
-    st.markdown("### 💾 Download jouw paklijst")
+    st.markdown("### 💾 Download paklijst")
     export_df = get_all_items(user)
     st.download_button(
         label="Download als CSV",
