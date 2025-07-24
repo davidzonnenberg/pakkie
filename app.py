@@ -57,6 +57,9 @@ with tab1:
     filter_option = st.radio("Filter", ["Alle", "Niet ingepakt", "Ingepakt", "Verwijderd"], horizontal=True)
     df = get_items(user, filter_option, search_query)
 
+if "changes" not in st.session_state:
+    st.session_state["changes"] = {}
+
     if "id" not in df.columns:
         st.warning("Database is leeg. Voeg een item toe hieronder!")
         df = pd.DataFrame(columns=["id"] + COLUMNS)
@@ -82,21 +85,25 @@ with tab1:
                 with cols[0]:
                     packed_val = st.checkbox(" ", value=row["Packed"], key=f"packed_{idx}", label_visibility="collapsed")
                     if packed_val != row["Packed"]:
+                        st.session_state["changes"].setdefault(idx, {})["Packed"] = int(packed_val)
                         mark_packed(user, idx, packed_val)
                         st.rerun()
                 with cols[1]:
                     new_item = st.text_input("Naam", value=row["Item"], key=f"item_{idx}", label_visibility="collapsed")
                     if new_item != row["Item"] and new_item.strip():
+                        st.session_state["changes"].setdefault(idx, {})["Item"] = new_item.strip()
                         update_item(user, idx, "Item", new_item.strip())
                         st.rerun()
                 with cols[2]:
                     new_cat = st.selectbox("Categorie", DEFAULT_CATEGORIES, index=DEFAULT_CATEGORIES.index(row["Category"]) if row["Category"] in DEFAULT_CATEGORIES else 0, key=f"cat_{idx}", label_visibility="collapsed")
                     if new_cat != row["Category"]:
+                        st.session_state["changes"].setdefault(idx, {})["Category"] = new_cat
                         update_item(user, idx, "Category", new_cat)
                         st.rerun()
                 with cols[3]:
                     note = st.text_input("Notitie", value=row["Notes"] or "", key=f"note_{idx}", label_visibility="collapsed")
                     if note != (row["Notes"] or ""):
+                        st.session_state["changes"].setdefault(idx, {})["Notes"] = note
                         update_item(user, idx, "Notes", note)
                 with cols[4]:
                     if filter_option == "Verwijderd":
@@ -115,6 +122,15 @@ with tab1:
                     st.success(f"Toegevoegd: {quick_add.strip()} ({cat})")
                     st.rerun()
 
+    
+if st.session_state["changes"]:
+    if st.button("💾 Opslaan wijzigingen"):
+        for item_id, changes in st.session_state["changes"].items():
+            for col, val in changes.items():
+                update_item(user, item_id, col, val)
+        st.session_state["changes"].clear()
+        st.success("Wijzigingen opgeslagen!")
+        st.rerun()
     # Random picker (independent of filter)
     st.markdown("---")
     st.markdown("#### 🌪️ Random Item Picker")
