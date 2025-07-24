@@ -34,10 +34,10 @@ user = st.sidebar.radio("Selecteer gebruiker", users)
 
 st.sidebar.markdown("### 🌦️ Weer Geestmerambacht (24-27 juli)")
 st.sidebar.info("""
-**24 juli**: 22°C, zon  
-**25 juli**: 23°C, half bewolkt  
-**26 juli**: 21°C, kans op bui  
-**27 juli**: 22°C, zon
+**24 juli**: 21°C, lichte regen  
+**25 juli**: 25°C, zonnig  
+**26 juli**: 22°C, licht bewolkt  
+**27 juli**: 21°C, zon
 """)
 
 st.sidebar.markdown("### 🎵 Packing Playlist")
