@@ -164,7 +164,6 @@ with tab_preset:
             st.rerun()
         except Exception as e:
             st.error(f"Fout bij inladen: {e}")
-            st.rerun()
 
 
 
