@@ -37,7 +37,11 @@ def get_users():
 def get_items(user, filter_option="Alle", search_query=""):
     table = user.replace(" ", "_").replace("&", "and")
     conn = connect_db()
-    df = pd.read_sql_query(f"SELECT * FROM {table}", conn)
+    cursor = conn.execute(f"SELECT * FROM {table}")
+    columns = [desc[0] for desc in cursor.description]
+    rows = cursor.fetchall()
+    df = pd.DataFrame(rows, columns=columns)
+
     conn.close()
 
     if df.empty:
