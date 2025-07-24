@@ -162,8 +162,14 @@ with tab_preset:
     if "uploaded_done" not in st.session_state:
         st.session_state.uploaded_done = False
 
-    uploaded_file = st.file_uploader("Kies een CSV bestand", type=["csv"])
+    # File uploader
+    uploaded_file = st.file_uploader("Kies een CSV bestand", type=["csv"], key="file_upload")
 
+    # 🔁 Reset uploaded_done when file is cleared
+    if uploaded_file is None and st.session_state.uploaded_done:
+        st.session_state.uploaded_done = False
+
+    # Only process if file exists and not already processed
     if uploaded_file is not None and not st.session_state.uploaded_done:
         try:
             uploaded_df = pd.read_csv(uploaded_file, sep=";")
@@ -173,6 +179,7 @@ with tab_preset:
             st.rerun()
         except Exception as e:
             st.error(f"Fout bij inladen: {e}")
+
 
 
 
