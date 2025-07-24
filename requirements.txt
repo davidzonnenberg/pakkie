@@ -1,5 +1,5 @@
 streamlit
 pandas
 openpyxl
-oauth2client
-gspread
+sqlite3
+os
