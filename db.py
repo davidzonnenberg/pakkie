@@ -23,8 +23,8 @@ def init_db():
                 id INTEGER PRIMARY KEY,
                 Item TEXT,
                 Category TEXT,
-                Packed BOOLEAN,
-                Deleted BOOLEAN,
+                Packed INTEGER,
+                Deleted INTEGER,
                 Notes TEXT
             )
         """)
@@ -54,7 +54,7 @@ def get_items(user, filter_option="Alle", search_query=""):
 
     for col in COLUMNS:
         if col not in df.columns:
-            df[col] = False if col in ["Packed", "Deleted"] else ""
+            df[col] = 0 if col in ["Packed", "Deleted"] else ""
     if "id" not in df.columns:
         df["id"] = df.index
 
@@ -83,9 +83,9 @@ def get_items(user, filter_option="Alle", search_query=""):
 def get_all_items(user):
     return get_items(user, "Alle")
 
-def add_item(user, item, category, note="", packed=False):
+def add_item(user, item, category, note="", packed=0):
     table = user.replace(" ", "_").replace("&", "and")
-    item_data = (item, category, packed, False, note)
+    item_data = (item, category, packed, 0, note)
     save_item(table, item_data)
 
 def save_item(user, item_data):
@@ -111,12 +111,12 @@ def update_item(user, item_id, column, value):
     conn.close()
 
 def delete_item(user, item_id):
-    update_item(user, item_id, "Deleted", True)
+    update_item(user, item_id, "Deleted", 1)
 
 def restore_item(user, item_id):
-    update_item(user, item_id, "Deleted", False)
+    update_item(user, item_id, "Deleted", 0)
 
-def mark_packed(user, item_id, packed=True):
+def mark_packed(user, item_id, packed=1):
     table = user.replace(" ", "_").replace("&", "and")
     conn = connect_db()
     cursor = conn.cursor()
@@ -149,13 +149,13 @@ def get_progress(user):
 def list_presets():
     return [f for f in os.listdir(".") if f.endswith(".csv") and f.startswith("_")]
 
-def load_preset_data(preset_file="packing_list.csv"):
+def load_preset_data():
     try:
         df = pd.read_csv(preset_file, sep=";")
         df = df.fillna("")
         for col in COLUMNS:
             if col not in df.columns:
-                df[col] = False if col in ["Packed", "Deleted"] else ""
+                df[col] = 0 if col in ["Packed", "Deleted"] else ""
         df = df.astype({
             "Item": "string",
             "Category": "string",
@@ -177,8 +177,8 @@ def overwrite_user_data(user, df):
         item_data = (
             str(row.get("Item", "") or ""),
             str(row.get("Category", "") or ""),
-            bool(row.get("Packed", False)),
-            bool(row.get("Deleted", False)),
+            int(bool(row.get("Packed", 0))),
+            int(bool(row.get("Deleted", 0))),
             str(row.get("Notes", "") or "")
         )
         cursor.execute(f"""
